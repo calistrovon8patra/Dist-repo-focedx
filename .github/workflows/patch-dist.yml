@@ -1,0 +1,32 @@
+name: Patch Dist Paths
+
+on:
+  workflow_dispatch:   # run manually
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Unzip dist-fixed.zip
+        run: unzip dist-fixed.zip -d dist
+
+      - name: Patch asset paths
+        run: |
+          # Replace absolute /assets with relative ./assets
+          find dist -type f -name "*.html" -print0 | xargs -0 sed -i 's|/assets/|./assets/|g'
+          find dist -type f -name "*.js" -print0 | xargs -0 sed -i 's|/assets/|./assets/|g'
+          find dist -type f -name "*.css" -print0 | xargs -0 sed -i 's|/assets/|./assets/|g'
+
+      - name: Re-zip patched dist
+        run: |
+          cd dist
+          zip -r ../dist-final.zip .
+
+      - name: Upload patched dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-final
+          path: dist-final.zip
