@@ -1,7 +1,7 @@
 name: Patch Dist Paths
 
 on:
-  workflow_dispatch:   # run manually
+  workflow_dispatch:
 
 jobs:
   patch:
@@ -10,15 +10,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify dist-fixed.zip
+        run: ls -lh
+
       - name: Unzip dist-fixed.zip
-        run: unzip dist-fixed.zip -d dist
+        run: unzip -o dist-fixed.zip -d dist
+
+      - name: List dist contents
+        run: ls -R dist | head -50
 
       - name: Patch asset paths
         run: |
-          # Replace absolute /assets with relative ./assets
-          find dist -type f -name "*.html" -print0 | xargs -0 sed -i 's|/assets/|./assets/|g'
-          find dist -type f -name "*.js" -print0 | xargs -0 sed -i 's|/assets/|./assets/|g'
-          find dist -type f -name "*.css" -print0 | xargs -0 sed -i 's|/assets/|./assets/|g'
+          set +e
+          for ext in html js css; do
+            files=$(find dist -type f -name "*.${ext}")
+            if [ -n "$files" ]; then
+              echo "Patching $ext files..."
+              sed -i 's|/assets/|./assets/|g' $files
+            else
+              echo "No .$ext files found"
+            fi
+          done
+          set -e
+
+      - name: Show first 20 lines of index.html
+        run: head -20 dist/index.html || echo "index.html not found"
 
       - name: Re-zip patched dist
         run: |
